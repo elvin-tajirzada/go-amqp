@@ -16,6 +16,6 @@ First we call the Init() function. The init() function takes the following param
 
 Init() function returns the RabbitMQ struct and error.
 
-See the [example](https://github.com/elvin-tacirzade/go-amqp/example) subdirectory for simple consumers executables.
+See the [example](**https://github.com/elvin-tacirzade/go-amqp/example**) subdirectory for simple consumers executables.
 
 
