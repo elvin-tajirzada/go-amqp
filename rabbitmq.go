@@ -1,3 +1,4 @@
+// Package amqp provide auto reconnect for rabbitmq
 package amqp
 
 import (
