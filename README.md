@@ -1,4 +1,6 @@
 # Go RabbitMQ Consumer
+[![Go Reference](https://pkg.go.dev/badge/github.com/elvin-tacirzade/go-amqp.svg)](https://pkg.go.dev/github.com/elvin-tacirzade/go-amqp)
+
 This package uses the package provided by the [RabbitMQ core team](https://github.com/rabbitmq/amqp091-go).
 ## Goals
 Provide auto reconnect
