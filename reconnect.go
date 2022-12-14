@@ -42,6 +42,7 @@ func reconnectChannel(rabbitMQ *RabbitMQ) {
 		closeReason, ok := <-rabbitMQ.Channel.NotifyClose(chanError)
 
 		if !ok {
+			rabbitMQ.done <- true
 			log.Println("channel closed by developer")
 			break
 		}
@@ -55,6 +56,7 @@ func reconnectChannel(rabbitMQ *RabbitMQ) {
 			if chErr == nil {
 				rabbitMQ.Channel = ch
 				log.Println("channel successfully reconnected")
+				rabbitMQ.done <- false
 				break
 			}
 

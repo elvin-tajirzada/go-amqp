@@ -14,6 +14,7 @@ type RabbitMQ struct {
 	Channel    *amqp.Channel
 	queue      amqp.Queue
 	delay      time.Duration
+	done       chan bool
 }
 
 // Init function connect to RabbitMQ and open a channel
@@ -30,7 +31,8 @@ func Init(user, password, host, port string, reconnectTime time.Duration) (*Rabb
 		return nil, fmt.Errorf("failed to open a channel: %v", chErr)
 	}
 
-	rabbitMQ := &RabbitMQ{Connection: conn, Channel: ch, delay: reconnectTime}
+	done := make(chan bool)
+	rabbitMQ := &RabbitMQ{Connection: conn, Channel: ch, delay: reconnectTime, done: done}
 
 	go reconnectConnection(rabbitMQ, url)
 	go reconnectChannel(rabbitMQ)
@@ -85,6 +87,10 @@ func (r *RabbitMQ) Consume(consumer string, autoAck, exclusive, noLocal, noWait 
 			messages, messagesErr := r.Channel.Consume(r.queue.Name, consumer, autoAck, exclusive, noLocal, noWait, arguments)
 			if messagesErr != nil {
 				log.Printf("failed to register a consumer: %v", messagesErr)
+				if <-r.done {
+					log.Println("consume closed by developer")
+					break
+				}
 				time.Sleep(r.delay)
 				continue
 			}
