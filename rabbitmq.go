@@ -2,6 +2,7 @@
 package amqp
 
 import (
+	"context"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
@@ -103,4 +104,23 @@ func (r *RabbitMQ) Consume(consumer string, autoAck, exclusive, noLocal, noWait 
 
 	return deliveries, nil
 
+}
+
+// Publish function sends a Publishing from the client to an exchange on the server
+func (r *RabbitMQ) Publish(ctx context.Context, exchangeName, key string, mandatory, immediate bool, contentType string, body []byte) error {
+	publishErr := r.Channel.PublishWithContext(
+		ctx,
+		exchangeName,
+		key,
+		mandatory,
+		immediate,
+		amqp.Publishing{
+			ContentType: contentType,
+			Body:        body,
+		},
+	)
+	if publishErr != nil {
+		return fmt.Errorf("failed to publish: %v", publishErr)
+	}
+	return nil
 }
