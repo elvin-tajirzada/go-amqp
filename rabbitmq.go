@@ -8,20 +8,21 @@ import (
 	"time"
 )
 
-// RabbitMQ struct defines Connection, Channel, queue, delay
+// RabbitMQ contains Connection and Channel
 type RabbitMQ struct {
 	Connection *amqp.Connection
 	Channel    *amqp.Channel
 	queue      amqp.Queue
+	dsn        string
 	delay      time.Duration
 	done       chan bool
 }
 
-// Init function connect to RabbitMQ and open a channel
-func Init(user, password, host, port string, reconnectTime time.Duration) (*RabbitMQ, error) {
-	url := fmt.Sprintf("amqp://%s:%s@%s:%s/", user, password, host, port)
+// New connects to RabbitMQ and open a channel
+func New(user, password, host, port string, reconnectTime time.Duration) (*RabbitMQ, error) {
+	dsn := fmt.Sprintf("amqp://%s:%s@%s:%s/", user, password, host, port)
 
-	conn, connErr := amqp.Dial(url)
+	conn, connErr := amqp.Dial(dsn)
 	if connErr != nil {
 		return nil, fmt.Errorf("failed to connect to RabbitMQ: %v", connErr)
 	}
@@ -32,15 +33,16 @@ func Init(user, password, host, port string, reconnectTime time.Duration) (*Rabb
 	}
 
 	done := make(chan bool)
-	rabbitMQ := &RabbitMQ{Connection: conn, Channel: ch, delay: reconnectTime, done: done}
 
-	go reconnectConnection(rabbitMQ, url)
-	go reconnectChannel(rabbitMQ)
+	rabbitMQ := &RabbitMQ{Connection: conn, Channel: ch, dsn: dsn, delay: reconnectTime, done: done}
+
+	rabbitMQ.reconnectConnection()
+	rabbitMQ.reconnectChannel()
 
 	return rabbitMQ, nil
 }
 
-// ExchangeDeclare function declare an exchange
+// ExchangeDeclare declare an exchange
 func (r *RabbitMQ) ExchangeDeclare(name, exchangeType string, durable, autoDelete, internal, noWait bool, arguments amqp.Table) error {
 	err := r.Channel.ExchangeDeclare(name, exchangeType, durable, autoDelete, internal, noWait, arguments)
 	if err != nil {
@@ -49,7 +51,7 @@ func (r *RabbitMQ) ExchangeDeclare(name, exchangeType string, durable, autoDelet
 	return nil
 }
 
-// QueueDeclare function declare a queue
+// QueueDeclare declare a queue
 func (r *RabbitMQ) QueueDeclare(name string, durable, autoDelete, exclusive, noWait bool, arguments amqp.Table) error {
 	queue, queueErr := r.Channel.QueueDeclare(name, durable, autoDelete, exclusive, noWait, arguments)
 	if queueErr != nil {
@@ -59,7 +61,7 @@ func (r *RabbitMQ) QueueDeclare(name string, durable, autoDelete, exclusive, noW
 	return nil
 }
 
-// QueueBind function bind a queue
+// QueueBind bind a queue
 func (r *RabbitMQ) QueueBind(key, exchangeName string, noWait bool, arguments amqp.Table) error {
 	err := r.Channel.QueueBind(r.queue.Name, key, exchangeName, noWait, arguments)
 	if err != nil {
@@ -68,7 +70,7 @@ func (r *RabbitMQ) QueueBind(key, exchangeName string, noWait bool, arguments am
 	return nil
 }
 
-// Qos function controls how many messages or how many bytes the server will try to keep on
+// Qos controls how many messages or how many bytes the server will try to keep on
 // the network for consumers before receiving delivery ack
 func (r *RabbitMQ) Qos(prefetchCount, prefetchSize int, global bool) error {
 	err := r.Channel.Qos(prefetchCount, prefetchSize, global)
@@ -78,7 +80,7 @@ func (r *RabbitMQ) Qos(prefetchCount, prefetchSize int, global bool) error {
 	return nil
 }
 
-// Consume function starts delivering queued messages
+// Consume starts delivering queued messages
 func (r *RabbitMQ) Consume(consumer string, autoAck, exclusive, noLocal, noWait bool, arguments amqp.Table) (<-chan amqp.Delivery, error) {
 	deliveries := make(chan amqp.Delivery)
 
@@ -102,5 +104,4 @@ func (r *RabbitMQ) Consume(consumer string, autoAck, exclusive, noLocal, noWait 
 	}()
 
 	return deliveries, nil
-
 }

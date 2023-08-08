@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-// reconnectConnection function reconnect a connection
-func reconnectConnection(rabbitMQ *RabbitMQ, url string) {
+// reconnectConnection reconnect a connection
+func (r *RabbitMQ) reconnectConnection() {
 	for {
 		chanError := make(chan *amqp.Error)
 
-		closeReason, ok := <-rabbitMQ.Connection.NotifyClose(chanError)
+		closeReason, ok := <-r.Connection.NotifyClose(chanError)
 		if !ok {
 			log.Println("connection closed by developer")
 			break
@@ -20,11 +20,11 @@ func reconnectConnection(rabbitMQ *RabbitMQ, url string) {
 		log.Printf("reason for the connection closed: %v\n", closeReason)
 
 		for {
-			time.Sleep(rabbitMQ.delay)
+			time.Sleep(r.delay)
 
-			conn, connErr := amqp.Dial(url)
+			conn, connErr := amqp.Dial(r.dsn)
 			if connErr == nil {
-				rabbitMQ.Connection = conn
+				r.Connection = conn
 				log.Println("connection successfully reconnected")
 				break
 			}
@@ -34,15 +34,15 @@ func reconnectConnection(rabbitMQ *RabbitMQ, url string) {
 	}
 }
 
-// reconnectChannel function reconnect a channel
-func reconnectChannel(rabbitMQ *RabbitMQ) {
+// reconnectChannel reconnect a channel
+func (r *RabbitMQ) reconnectChannel() {
 	for {
 		chanError := make(chan *amqp.Error)
 
-		closeReason, ok := <-rabbitMQ.Channel.NotifyClose(chanError)
+		closeReason, ok := <-r.Channel.NotifyClose(chanError)
 
 		if !ok {
-			rabbitMQ.done <- true
+			r.done <- true
 			log.Println("channel closed by developer")
 			break
 		}
@@ -50,13 +50,13 @@ func reconnectChannel(rabbitMQ *RabbitMQ) {
 		log.Printf("reason for the channel closed: %v\n", closeReason)
 
 		for {
-			time.Sleep(rabbitMQ.delay)
+			time.Sleep(r.delay)
 
-			ch, chErr := rabbitMQ.Connection.Channel()
+			ch, chErr := r.Connection.Channel()
 			if chErr == nil {
-				rabbitMQ.Channel = ch
+				r.Channel = ch
 				log.Println("channel successfully reconnected")
-				rabbitMQ.done <- false
+				r.done <- false
 				break
 			}
 

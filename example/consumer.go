@@ -18,7 +18,7 @@ func main() {
 	prefetchCount := 5
 	var deliveries []string
 
-	rabbitMQ, err := amqp.Init(rabbitMQUser, rabbitMQPassword, rabbitMQHost, rabbitMQPort, reconnectTime)
+	rabbitMQ, err := amqp.New(rabbitMQUser, rabbitMQPassword, rabbitMQHost, rabbitMQPort, reconnectTime)
 	if err != nil {
 		log.Fatal(err)
 	}
