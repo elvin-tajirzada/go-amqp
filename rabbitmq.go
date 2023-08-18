@@ -36,8 +36,8 @@ func New(user, password, host, port string, reconnectTime time.Duration) (*Rabbi
 
 	rabbitMQ := &RabbitMQ{Connection: conn, Channel: ch, dsn: dsn, delay: reconnectTime, done: done}
 
-	rabbitMQ.reconnectConnection()
-	rabbitMQ.reconnectChannel()
+	go rabbitMQ.reconnectConnection()
+	go rabbitMQ.reconnectChannel()
 
 	return rabbitMQ, nil
 }
