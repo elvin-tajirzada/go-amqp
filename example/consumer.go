@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/elvin-tacirzade/go-amqp"
+	"github.com/elvin-tajirzada/go-amqp"
 	"log"
 	"os"
 	"os/signal"
